@@ -91,7 +91,7 @@ cp2-Arthur-JoaoVitor/
 ├── src/
 │   ├── Parser.java              parser descendente recursivo
 │   ├── ErroSintatico.java       erro sintático (linha, coluna, mensagem)
-│   ├── Scanner.java             analisador léxico (revisado a partir do Checkpoint 1)
+│   ├── Scanner.java             analisador léxico (mesmo do Checkpoint 1)
 │   ├── Token.java
 │   └── TokenType.java
 └── test/
@@ -119,5 +119,5 @@ A saída mostra o resultado de cada caso de teste (programas válidos, inválido
 
 - **Parser LL(1) descendente recursivo:** cada não-terminal da gramática tem um método `parseX()` correspondente, e a escolha de alternativa é feita olhando apenas o token atual (FIRST) e, para as alternativas vazias, o conjunto FOLLOW.
 - **Recuperação em modo pânico:** ao encontrar um token inesperado, o parser registra um único erro por ponto de falha e sincroniza avançando até um token do conjunto de sincronização (normalmente o FOLLOW do não-terminal ou as âncoras `NEWLINE`/`DEDENT`/`EOF`), evitando uma cascata de erros espúrios.
-- **Scanner revisado:** durante a escrita do parser, bugs do scanner do Checkpoint 1 foram corrigidos (tratamento de comentários e indentação, detecção de identificador iniciado por `_`), mantendo os dois componentes consistentes.
+- **Scanner reaproveitado:** o parser consome os tokens do mesmo `Scanner.java` do Checkpoint 1, mantendo os dois componentes consistentes.
 - **Sem ambiguidade de dangling else:** a gramática evita a ambiguidade clássica porque todo bloco da Cascavel termina com um `DEDENT` explícito (ver Seção 6.4 da documentação da gramática).
