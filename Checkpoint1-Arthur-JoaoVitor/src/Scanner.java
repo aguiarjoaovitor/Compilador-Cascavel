@@ -54,7 +54,7 @@ public class Scanner {
     }
 
     public boolean temProximo() {
-        return !eofEmitido;
+        return !eofEmitido || !tokensPendentes.isEmpty();
     }
 
     public Token proximoToken() {
@@ -118,30 +118,41 @@ public class Scanner {
     }
 
     private void processarIndentacao() {
-        int espacos = 0;
         boolean temErroTab = false;
-        int colunaErro = coluna;
         
-        while (atual < fonte.length() && (espiar() == ' ' || espiar() == '\t')) {
-            char c = avancar();
-            if (c == '\t' && !temErroTab) {
+        while (!chegouAoFim()) {
+            char c = espiar();
+            if (c == ' ' || c == '\r') {
+                avancar();
+            } else if (c == '\t') {
                 temErroTab = true;
-                reportarErro("Tab na indentação", linha, colunaErro);
+                avancar();
+            } else if (c == '\n') {
+                atual++;
+                linha++;
+                coluna = 1;
+                temErroTab = false;
+            } else if (c == '#' && espiarProximo() != '*') {
+                comentarioLinha();
+            } else if (c == '#') {
+                inicio = atual;
+                colunaInicio = coluna;
+                avancar();
+                comentarioBloco();
+            } else {
+                break;
             }
-            if (c == ' ') espacos++;
         }
         
-        if (atual >= fonte.length() || espiar() == '\n' || espiar() == '\r') {
-            return;
-        }
-        
-        if (espiar() == '#' && espiarProximo() != '*') {
+        if (chegouAoFim()) {
             return;
         }
         
         inicioDeLinha = false;
+        int espacos = coluna - 1;
         
         if (temErroTab) {
+            reportarErro("Tab na indentação", linha, 1);
             espacos = pilhaIndentacao.peek();
         }
         
@@ -205,6 +216,10 @@ public class Scanner {
                 case ')': adicionarToken(TokenType.RPAREN); break;
                 case ':': adicionarToken(TokenType.COLON); break;
                 case ',': adicionarToken(TokenType.COMMA); break;
+                case '_':
+                    reportarErro("Identificador não pode começar com '_'", linha, colunaInicio);
+                    consumirAlfanumericos();
+                    break;
                 default:
                     reportarErro("Caractere fora do alfabeto", linha, colunaInicio);
                     break;
@@ -227,27 +242,33 @@ public class Scanner {
             avancar();
         }
         
+        TokenType tipo = TokenType.INT_LIT;
+        
         if (espiar() == '.') {
             avancar(); // Consome '.'
             
             if (!ehDigito(espiar())) {
                 reportarErro("Real sem dígito após o ponto", linha, colunaInicio);
-                adicionarToken(TokenType.DOUBLE_LIT);
-            } else {
-                while (atual < fonte.length() && ehDigito(espiar())) {
-                    avancar();
-                }
-                adicionarToken(TokenType.DOUBLE_LIT);
+                return;
             }
-        } else {
-            adicionarToken(TokenType.INT_LIT);
+            while (atual < fonte.length() && ehDigito(espiar())) {
+                avancar();
+            }
+            tipo = TokenType.DOUBLE_LIT;
         }
         
         if (atual < fonte.length() && (ehLetra(espiar()) || espiar() == '_')) {
             reportarErro("Número seguido de letra ou '_'", linha, colunaInicio);
-            while (atual < fonte.length() && (ehLetra(espiar()) || ehDigito(espiar()) || espiar() == '_')) {
-                avancar(); 
-            }
+            consumirAlfanumericos();
+            return;
+        }
+        
+        adicionarToken(tipo);
+    }
+
+    private void consumirAlfanumericos() {
+        while (atual < fonte.length() && (ehLetra(espiar()) || ehDigito(espiar()) || espiar() == '_')) {
+            avancar();
         }
     }
 
